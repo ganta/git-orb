@@ -1,0 +1,4 @@
+version: 2.1
+
+description: |
+  Execute custom Git commands on CircleCI

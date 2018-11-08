@@ -1,0 +1,19 @@
+version: 2.1
+
+orbs:
+  orb-tools: circleci/orb-tools@volatile
+  cli: circleci/circleci-cli@volatile
+
+jobs:
+  validate-orb:
+    executor: cli/default
+    steps:
+      - checkout
+      - orb-tools/validate:
+          orb-path: src/orb.yml
+
+workflows:
+  version: 2
+  validate:
+    jobs:
+      - validate-orb
