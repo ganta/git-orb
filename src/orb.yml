@@ -2,3 +2,33 @@ version: 2.1
 
 description: |
   Execute custom Git commands on CircleCI
+
+commands:
+  shallow-clone-checkout:
+    description: Check out source code using Git shallow clone
+    steps:
+      - run:
+          name: Checkout code (using shallow clone)
+          command: |
+            # Workaround old docker images with incorrect $HOME
+            # check https://github.com/docker/docker/issues/2968 for details
+            if [ "${HOME}" = "/" ]
+            then
+              export HOME=$(getent passwd $(id -un) | cut -d: -f6)
+            fi
+
+            # SSH configuration
+            mkdir -p ~/.ssh
+
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+            ssh-keyscan -H bitbucket.org >> ~/.ssh/known_hosts
+
+            # Use git+ssh instead of https
+            git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
+            git config --global gc.auto 0 || true
+
+            # Checkout
+            git clone --depth=1 --branch ${CIRCLE_BRANCH} --single-branch ${CIRCLE_REPOSITORY_URL} .
+
+            # Check the commit ID of the checked out code
+            git reset --hard ${CIRCLE_SHA1}

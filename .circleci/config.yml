@@ -3,17 +3,52 @@ version: 2.1
 orbs:
   orb-tools: circleci/orb-tools@volatile
   cli: circleci/circleci-cli@volatile
+  test:
+    # Workaround for passing a SSH key with orb-tools/local-test-build command
+    # https://github.com/CircleCI-Public/orb-tools-orb/blob/330d11bb0cdef3c2f24cb4e2c595ca01e55bfd8c/src/%40orb.yml#L107-L134
+    commands:
+      local-test-build:
+        parameters:
+          test-config-location:
+            type: string
+        steps:
+          - run: cp << parameters.test-config-location >> tmp-config-src/config.yml
+          - run:
+              name: pack tmp-config-src to uncompiled-config.yml
+              command: |
+                mkdir -pv $(dirname uncompiled-config.yml)
+                circleci config pack tmp-config-src > uncompiled-config.yml
+          - run: cat uncompiled-config.yml
+          - run:
+              name: compile test config
+              command: circleci config process uncompiled-config.yml > config.yml
+          - run:
+              name: run test job locally
+              command: |
+                # Cannot access "~/.ssh" from working directory.
+                cp ~/.ssh/id_rsa ./id_rsa
 
-jobs:
-  validate-orb:
-    executor: cli/default
-    steps:
-      - checkout
-      - orb-tools/validate:
-          orb-path: src/orb.yml
+                circleci local execute --checkout-key ./id_rsa -c config.yml | \
+                  tee local_build_output.txt /dev/stderr | \
+                  tail -n 1 | \
+                  grep "Success"
 
 workflows:
   version: 2
-  validate:
+  test:
     jobs:
-      - validate-orb
+      - orb-tools/pack:
+          source-dir: src/
+          destination-orb-path: packed/orb.yml
+          workspace-path: packed/orb.yml
+          artifact-path: packed/orb.yml
+          validate: true
+
+      - orb-tools/test-in-builds:
+          requires: [orb-tools/pack]
+          attach-workspace: true
+          orb-location: packed/orb.yml
+          orb-name: git
+          test-steps:
+            - test/local-test-build:
+                test-config-location: test/shallow-clone-checkout.yml
