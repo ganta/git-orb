@@ -61,3 +61,45 @@ workflows:
           validate: true
           checkout: false
           attach-workspace: true
+
+      - increment-patch-version:
+          type: approval
+          requires: [orb-tools/publish]
+      - orb-tools/increment:
+          requires: [increment-patch-version]
+          orb-path: packed/orb.yml
+          orb-ref: ganta/git
+          segment: patch
+          publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
+          validate: true
+          checkout: false
+          attach-workspace: true
+
+      - increment-minor-version:
+          type: approval
+          requires: [orb-tools/publish]
+      - orb-tools/increment:
+          requires: [increment-minor-version]
+          segment: minor
+          orb-path: packed/orb.yml
+          orb-ref: ganta/git
+          publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
+          validate: true
+          checkout: false
+          attach-workspace: true
+
+      - increment-major-version:
+          filters:
+            branches:
+              only: master
+          type: approval
+          requires: [orb-tools/publish]
+      - orb-tools/increment:
+          requires: [increment-major-version]
+          segment: major
+          orb-path: packed/orb.yml
+          orb-ref: ganta/git
+          publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
+          validate: true
+          checkout: false
+          attach-workspace: true
