@@ -2,6 +2,7 @@ version: 2.1
 
 description: |
   Execute custom Git commands on CircleCI
+  https://github.com/ganta/git-orb
 
 commands:
   shallow-clone-checkout:
