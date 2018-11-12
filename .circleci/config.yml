@@ -35,7 +35,7 @@ orbs:
 
 workflows:
   version: 2
-  test-and-publish:
+  test-and-publish-to-development:
     jobs:
       - orb-tools/pack:
           source-dir: src/
@@ -61,3 +61,17 @@ workflows:
           validate: true
           checkout: false
           attach-workspace: true
+
+  publish-to-production:
+    jobs:
+      - orb-tools/publish:
+          filters:
+            tags:
+              only: /\d+\.\d+\.\d+/
+            branches:
+              ignore: /.*/
+          orb-path: src/orb.yml
+          orb-ref: "ganta/git@${CIRCLE_TAG}"
+          publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
+          validate: true
+          checkout: true
