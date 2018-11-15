@@ -7,7 +7,44 @@ description: |
 commands:
   shallow-clone-checkout:
     description: Check out source code using Git shallow clone
+    parameters:
+      use-https:
+        description: |
+          Boolean for whether or not to clone with HTTPS URL.
+          Default is false.
+          The private repository support is currently only GitHub, you need to set the `GITHUB_ACCESS_TOKEN` environment variable.
+          For details on how to create GitHub access token, please see the following page:
+          https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
+        type: boolean
+        default: false
     steps:
+      - unless:
+          condition: << parameters.use-https >>
+          steps:
+            - run:
+                name: Cloning with SSH URL configuration
+                command: |
+                   mkdir -p ~/.ssh
+
+                   ssh-keyscan -H github.com >> ~/.ssh/known_hosts
+                   ssh-keyscan -H bitbucket.org >> ~/.ssh/known_hosts
+
+                   git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" || true
+      - when:
+          condition: << parameters.use-https >>
+          steps:
+            - run:
+                name: Cloning with HTTPS URL configuration
+                command: |
+                  if [ -n "${GITHUB_ACCESS_TOKEN}" ]
+                  then
+                    touch ~/.netrc
+                    chmod 0600 ~/.netrc
+                    echo "machine github.com login ${GITHUB_ACCESS_TOKEN}" > ~/.netrc
+                  fi
+
+                  git config --global url."https://github.com/".insteadOf "git@github.com:" || true
+
       - run:
           name: Checkout code (using shallow clone)
           command: |
@@ -18,14 +55,6 @@ commands:
               export HOME=$(getent passwd $(id -un) | cut -d: -f6)
             fi
 
-            # SSH configuration
-            mkdir -p ~/.ssh
-
-            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-            ssh-keyscan -H bitbucket.org >> ~/.ssh/known_hosts
-
-            # Use git+ssh instead of https
-            git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
             git config --global gc.auto 0 || true
 
             # Checkout
