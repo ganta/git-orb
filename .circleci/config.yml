@@ -52,6 +52,8 @@ workflows:
           test-steps:
             - test/local-test-build:
                 test-config-location: test/shallow-clone-checkout.yml
+            - test/local-test-build:
+                test-config-location: test/shallow-clone-checkout-with-https.yml
 
       - orb-tools/publish:
           requires: [orb-tools/test-in-builds]
