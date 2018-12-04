@@ -22,7 +22,7 @@ commands:
           condition: << parameters.use-https >>
           steps:
             - run:
-                name: Cloning with SSH URL configuration
+                name: Configure to clone repository with SSH connection
                 command: |
                    mkdir -p ~/.ssh
 
@@ -34,7 +34,7 @@ commands:
           condition: << parameters.use-https >>
           steps:
             - run:
-                name: Cloning with HTTPS URL configuration
+                name: Configure to clone repository with HTTPS connection
                 command: |
                   if [ -n "${GITHUB_ACCESS_TOKEN}" ]
                   then
