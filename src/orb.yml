@@ -9,41 +9,49 @@ commands:
     description: Check out source code using Git shallow clone
     parameters:
       use-https:
-        description: |
+        description: >-
           Boolean for whether or not to clone with HTTPS URL.
-          Default is false.
-          The private repository support is currently only GitHub, you need to set the `GITHUB_ACCESS_TOKEN` environment variable.
-          For details on how to create GitHub access token, please see the following page:
-          https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
+          The private repository support is currently only GitHub, you need to set the `github-access-token` parameter.
         type: boolean
         default: false
+      github-access-token:
+        description: >-
+          If you want to access private repository on GitHub, set the environment variable containing
+          your GitHub Personal Access Token. Pass this as a literal string such as `$GITHUB_ACCESS_TOKEN`.
+          Do not paste the actual token into your configuration.
+          For details on how to create GitHub access token, please see the following page:
+          https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/
+        type: string
+        default: ""
     steps:
       - unless:
           condition: << parameters.use-https >>
           steps:
             - run:
-                name: Cloning with SSH URL configuration
+                name: Configure to clone repository with SSH connection
                 command: |
                    mkdir -p ~/.ssh
 
                    ssh-keyscan -H github.com >> ~/.ssh/known_hosts
                    ssh-keyscan -H bitbucket.org >> ~/.ssh/known_hosts
 
-                   git config --global url."ssh://git@github.com/".insteadOf "https://github.com/" || true
+                   git config --global url."ssh://git@github.com/".insteadOf "https://github.com/"
       - when:
           condition: << parameters.use-https >>
           steps:
             - run:
-                name: Cloning with HTTPS URL configuration
+                name: Configure to clone repository with HTTPS connection
                 command: |
-                  if [ -n "${GITHUB_ACCESS_TOKEN}" ]
-                  then
-                    touch ~/.netrc
-                    chmod 0600 ~/.netrc
-                    echo "machine github.com login ${GITHUB_ACCESS_TOKEN}" > ~/.netrc
-                  fi
-
-                  git config --global url."https://github.com/".insteadOf "git@github.com:" || true
+                  git config --global url."https://github.com/".insteadOf "git@github.com:"
+      - when:
+          condition: << parameters.github-access-token >>
+          steps:
+            - run:
+                name: Configure to clone Private Repository on GitHub
+                command: |
+                  touch ~/.netrc
+                  chmod 0600 ~/.netrc
+                  echo "machine github.com login << parameters.github-access-token >>" > ~/.netrc
 
       - run:
           name: Checkout code (using shallow clone)
