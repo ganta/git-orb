@@ -43,7 +43,6 @@ workflows:
           workspace-path: packed/orb.yml
           artifact-path: packed/orb.yml
           validate: true
-
       - orb-tools/test-in-builds:
           requires: [orb-tools/pack]
           attach-workspace: true
@@ -54,7 +53,6 @@ workflows:
                 test-config-location: test/shallow-clone-checkout.yml
             - test/local-test-build:
                 test-config-location: test/shallow-clone-checkout-with-https.yml
-
       - orb-tools/publish:
           requires: [orb-tools/test-in-builds]
           orb-path: packed/orb.yml
@@ -66,14 +64,22 @@ workflows:
 
   publish-to-production:
     jobs:
-      - orb-tools/publish:
+      - orb-tools/pack:
           filters:
             tags:
               only: /\d+\.\d+\.\d+/
             branches:
               ignore: /.*/
-          orb-path: src/orb.yml
+          source-dir: src/
+          destination-orb-path: packed/orb.yml
+          workspace-path: packed/orb.yml
+          artifact-path: packed/orb.yml
+          validate: true
+      - orb-tools/publish:
+          requires: [orb-tools/pack]
+          orb-path: packed/orb.yml
           orb-ref: "ganta/git@${CIRCLE_TAG}"
           publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
           validate: true
-          checkout: true
+          checkout: false
+          attach-workspace: true
