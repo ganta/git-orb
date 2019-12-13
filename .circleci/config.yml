@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  orb-tools: circleci/orb-tools@volatile
+  orb-tools: circleci/orb-tools@8.27.6
   cli: circleci/circleci-cli@volatile
   test:
     # Workaround for passing a SSH key with orb-tools/local-test-build command
@@ -37,30 +37,23 @@ workflows:
   version: 2
   test-and-publish-to-development:
     jobs:
-      - orb-tools/pack:
-          source-dir: src/
-          destination-orb-path: packed/orb.yml
-          workspace-path: packed/orb.yml
-          artifact-path: packed/orb.yml
-          validate: true
+      - orb-tools/pack
       - orb-tools/test-in-builds:
           requires: [orb-tools/pack]
           attach-workspace: true
-          orb-location: packed/orb.yml
           orb-name: git
           test-steps:
             - test/local-test-build:
                 test-config-location: test/shallow-clone-checkout.yml
             - test/local-test-build:
                 test-config-location: test/shallow-clone-checkout-with-https.yml
-      - orb-tools/publish:
+      - orb-tools/publish-dev:
           requires: [orb-tools/test-in-builds]
-          orb-path: packed/orb.yml
-          orb-ref: "ganta/git@dev:${CIRCLE_BRANCH}"
-          publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
-          validate: true
-          checkout: false
           attach-workspace: true
+          checkout: false
+          orb-name: ganta/git
+          publish-branch-sha-version: true
+          publish-token-variable: ORB_PUBLISHING_TOKEN
 
   publish-to-production:
     jobs:
@@ -70,16 +63,9 @@ workflows:
               only: /\d+\.\d+\.\d+/
             branches:
               ignore: /.*/
-          source-dir: src/
-          destination-orb-path: packed/orb.yml
-          workspace-path: packed/orb.yml
-          artifact-path: packed/orb.yml
-          validate: true
       - orb-tools/publish:
-          requires: [orb-tools/pack]
-          orb-path: packed/orb.yml
-          orb-ref: "ganta/git@${CIRCLE_TAG}"
-          publish-token-variable: "${ORB_PUBLISHING_TOKEN}"
-          validate: true
-          checkout: false
           attach-workspace: true
+          requires: [orb-tools/pack]
+          checkout: false
+          orb-ref: "ganta/git@${CIRCLE_TAG}"
+          publish-token-variable: ORB_PUBLISHING_TOKEN
