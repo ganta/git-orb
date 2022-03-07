@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  orb-tools: circleci/orb-tools@9.1.0
+  orb-tools: circleci/orb-tools@10.1.0
   cli: circleci/circleci-cli@volatile
   test:
     # Workaround for passing a SSH key with orb-tools/local-test-build command
